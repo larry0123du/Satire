@@ -7,14 +7,15 @@ TRUE_DOC = "data/doc/norm_true"
 FAKE_SENT = "data/sent/norm_fake"
 TRUE_SENT = "data/sent/norm_true"
 FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
-TRUE_FILE = ["0_true.txt", "1_true.txt", "2_true.txt", "3_true.txt", "4_true.txt",
-             "5_true.txt", "6_true.txt", "7_true.txt", "8_true.txt", "9_true.txt"]
+TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
+             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "true_test_1.txt", "true_test_2.txt"]
 
+homedic = os.getcwd()
 
 def load_doc(file_name):
     with open(file_name) as f:
         lines = f.readlines()
-    return [l.strip() for l in lines]
+    return [l.strip() for l in lines] # delete space
 
 
 def load_sent(file_name):
@@ -37,6 +38,11 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
         text = list2doc(text)
     sent_feature = load_sent(sent_path)
     doc_features = load_doc(doc_path)
+    # print(text[0],len(text[1]))
+    # print(len(text),len(sent_feature),len(doc_features))
+    print(type(doc_features))
+    print(doc_features)
+
     assert len(text) == len(sent_feature) == len(doc_features)
     labels = [label for _ in range(len(text))]
     if sent_ling and doc_ling:
@@ -47,6 +53,13 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
         return list(zip(text, doc_features, labels))
     elif not sent_ling and not doc_ling:
         return list(zip(text, labels))
+
+
+# text_path = os.path.join(homedic, 'toydata_featuretest.txt')
+# sent_path = os.path.join(homedic, 'para_ling.txt')
+# doc_path = os.path.join(homedic, 'doc_ling.txt')
+# load_feature_set(text_path, sent_path, doc_path, label = 1, doc=False, sent_ling=True, doc_ling=True)
+
 
 
 def load_true(doc=False, sent_ling=True, doc_ling=True):
