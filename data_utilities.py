@@ -43,7 +43,7 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
     print(type(doc_features))
     print(doc_features)
 
-    assert len(text) == len(sent_feature) == len(doc_features)
+    # assert len(text) == len(sent_feature) == len(doc_features)
     labels = [label for _ in range(len(text))]
     if sent_ling and doc_ling:
         return list(zip(text, sent_feature, doc_features, labels))

@@ -10,11 +10,13 @@ import lasagne
 import logging
 import arg_parser as ap
 
+import glob
+
 
 def main(args):
     logging.info("loading data...")
-    fake_train, fake_dev, fake_test = du.load_fake()
-    true_train, true_dev, true_test = du.load_true()
+    fake_train, fake_dev, fake_test = du.load_fake(False, False, False)
+    true_train, true_dev, true_test = du.load_true(False, False, False)
     if args.debug:
         true_train = [true_train[0][:100]]
         fake_train = fake_train[:10]
@@ -30,7 +32,16 @@ def main(args):
         args.rnn = lasagne.layers.RecurrentLayer
 
     logging.info("building dictionary...")
-    word_dict, char_dict = util.build_dict(None, max_words=0, dict_file=["word_dict", "char_dict"])
+    # word_dict, char_dict = util.build_dict(None, max_words=0, dict_file=["word_dict", "char_dict"])
+# changed on June 30th
+    list_of_files = glob.glob('data/text/true/*train*.txt') + glob.glob('data/text/fake/*train*.txt')
+    docs = []
+    for fi in list_of_files:
+        docs += du.load_sent(fi)
+
+    word_dict, char_dict = util.build_dict(docs)
+# end of change
+
     logging.info("creating embedding matrix...")
     word_embed = util.words2embedding(word_dict, 100, args.embedding_file)
     char_embed = util.char2embedding(char_dict, 30)
@@ -42,15 +53,15 @@ def main(args):
 
     logging.info("batching examples...")
     # dev_examples = mb.doc_minibatch(fake_dev + true_dev, minibatch_size=args.batch_size, shuffle=False)
-    dev_examples = mb.vec_minibatch(fake_dev + true_dev, word_dict, char_dict, args, False)
+    dev_examples = mb.vec_minibatch(fake_dev + true_dev, word_dict, char_dict, args, False, True, False, False)
     # test_examples = mb.doc_minibatch(fake_test + true_test, args.batch_size, False)
-    test_examples = mb.vec_minibatch(fake_test + true_test, word_dict, char_dict, args, False)
+    test_examples = mb.vec_minibatch(fake_test + true_test, word_dict, char_dict, args, False, True, False, False)
     train_examples = mb.train_doc_minibatch(fake_train, true_train, args, over_sample=True)
     logging.info("checking network...")
     # dev_acc = evals.eval_batch(eval_fn, dev_examples, word_dict, char_dict, args)
-    dev_acc = evals.eval_vec_batch(eval_fn, dev_examples)
+    dev_acc = evals.eval_vec_batch(eval_fn, dev_examples, True, False, False)
     print('Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc)
-    test_acc = evals.eval_vec_batch(eval_fn, test_examples)
+    test_acc = evals.eval_vec_batch(eval_fn, test_examples, True, False, False)
     print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
     prev_fsc = 0
     stop_count = 0

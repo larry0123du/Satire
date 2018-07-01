@@ -7,6 +7,8 @@ import theano
 import lasagne
 from collections import Counter
 
+import codecs
+
 
 def merge_list(l):
     docs = []
@@ -142,7 +144,7 @@ def words2embedding(word_dict, dim, in_file=None, init=lasagne.init.Uniform()):
     if in_file is not None:
         logging.info("loading embedding file: %s" % in_file)
         pre_trained = 0
-        with open(in_file, encoding='utf') as f:
+        with codecs.open(in_file, encoding='utf') as f:
             l = f.readlines()
         for line in l:
             sp = line.split()

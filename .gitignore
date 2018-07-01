@@ -1,0 +1,5 @@
+*.swp
+*.pyc
+data
+word_dict
+char_dict

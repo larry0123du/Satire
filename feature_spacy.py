@@ -1,4 +1,5 @@
 import os
+import errno
 import math
 import nltk
 # nltk.download('all')
@@ -14,6 +15,13 @@ from collections import Counter
 import logging
 from time import time
 
+def create_path(filename):
+	if not os.path.exists(os.path.dirname(filename)):
+	    try:
+		os.makedirs(os.path.dirname(filename))
+	    except OSError as exc: # Guard against race condition
+		if exc.errno != errno.EEXIST:
+		    raise
 
 nlp = spacy.load('en_core_web_sm', parser=False, entity=False, matcher=False, add_vectors=False)
 tagdict = load('help/tagsets/upenn_tagset.pickle')
@@ -23,9 +31,13 @@ spacy_Pos_taglist = ['PUNCT', 'SYM', 'ADJ', 'CCONJ', 'NUM', 'DET', 'ADV', 'ADP',
 FAKE_TEXT = "data/text/fake"
 TRUE_TEXT = "data/text/true"
 FAKE_DOC = "data/doc/norm_fake"
+create_path(FAKE_DOC)
 TRUE_DOC = "data/doc/norm_true"
+create_path(TRUE_DOC)
 FAKE_SENT = "data/sent/norm_fake"
+create_path(FAKE_SENT)
 TRUE_SENT = "data/sent/norm_true"
+create_path(TRUE_SENT)
 FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
 TRUE_FILE = ["true_train_1.txt",
              "true_validation_1.txt", "true_test_1.txt"]
@@ -34,7 +46,7 @@ homedic = os.getcwd()
 
 
 def readability_f(text):
-	text_ = textacy.Doc(text)
+	text_ = textacy.Doc(unicode(text))
 	ts = textacy.TextStats(text_)
 	Flesch_reading_ease_index = ts.readability_stats['flesch_reading_ease']
 	Gunning_fog_index = ts.readability_stats['gunning_fog_index']
@@ -66,7 +78,7 @@ def POS_f(text):
 
 
 def POS_f_Spacy(text):
-	doc = nlp(text)
+	doc = nlp(unicode(text))
 	word_list = []
 	for token in doc:
 		word_list.append(token.pos_)

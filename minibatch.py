@@ -41,6 +41,9 @@ def vec_minibatch(docs, word_dict, char_dict, args, shuffle=True, char=True, sen
     mbs = [np.arange(id, min(id + args.batch_size, doc_length)) for id in id_list]
     for mb in mbs:
         batch_x = [docs[i] for i in mb]
+# deugging
+        print(batch_x)
+
         if char and sent_ling and doc_ling:
             batch_x, batch_sent, batch_doc, batch_y = zip(*batch_x)
             batch_x = util.vectorization(list(batch_x), word_dict, char_dict, max_char_length=args.max_char)
