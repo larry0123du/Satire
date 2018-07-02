@@ -133,6 +133,18 @@ def confusion_matrix(predict, y, mb=None):
     d = np.sum(np.logical_and(y == 1, predict == 1))
     if mb is not None:
         print(mb[predict == 1])
+
+    # debugging
+    '''
+    print('a:\n', a)
+    print()
+    print('b:\n', b)
+    print()
+    print('c:\n', c)
+    print()
+    print('d:\n', d)
+    print()
+    '''
     return a, b, c, d
 
 

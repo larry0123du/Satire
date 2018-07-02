@@ -42,7 +42,7 @@ def vec_minibatch(docs, word_dict, char_dict, args, shuffle=True, char=True, sen
     for mb in mbs:
         batch_x = [docs[i] for i in mb]
 # deugging
-        print(batch_x)
+        # print(batch_x)
 
         if char and sent_ling and doc_ling:
             batch_x, batch_sent, batch_doc, batch_y = zip(*batch_x)

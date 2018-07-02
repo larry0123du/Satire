@@ -48,8 +48,13 @@ def main(args):
     (args.word_vocab_size, args.word_embed_size) = word_embed.shape
     (args.char_vocab_size, args.char_embed_size) = char_embed.shape
     logging.info("compiling Theano function...")
+    '''
+    no ling
     att_fn, eval_fn, train_fn, params = \
         tf.char_hierarchical_linguistic_fn(args, word_embed, char_embed, values=None)
+    '''
+    att_fn, eval_fn, train_fn, params = \
+        tf.char_hierarchical_fn(args, word_embed, char_embed, values=None)
 
     logging.info("batching examples...")
     # dev_examples = mb.doc_minibatch(fake_dev + true_dev, minibatch_size=args.batch_size, shuffle=False)
@@ -75,18 +80,38 @@ def main(args):
         if epoch > 3:
             logging.info("compiling Theano function again...")
             args.learning_rate *= 0.9
+            '''
+            no ling
             att_fn, eval_fn, train_fn, params = \
                 tf.char_hierarchical_linguistic_fn(args, word_embed, char_embed, values=[x.get_value() for x in params])
+            '''
+            att_fn, eval_fn, train_fn, params = \
+                tf.char_hierarchical_fn(args, word_embed, char_embed, values=[x.get_value() for x in params])
+
         for batch_x, _ in train_examples:
-            batch_x, batch_sent, batch_doc, batch_y = zip(*batch_x)
+            '''
+            no ling
+            # batch_x, batch_sent, batch_doc, batch_y = zip(*batch_x)
+            '''
+            batch_x, batch_y = zip(*batch_x)
+
             batch_x = util.vectorization(list(batch_x), word_dict, char_dict, max_char_length=args.max_char)
             batch_rnn, batch_sent_mask, batch_word_mask, batch_cnn = \
                 util.mask_padding(batch_x, args.max_sent, args.max_word, args.max_char)
+            '''
+            no ling
             batch_sent = util.sent_ling_padding(list(batch_sent), args.max_sent, args.max_ling)
             batch_doc = util.doc_ling_padding(list(batch_doc), args.max_ling)
+            '''
             batch_y = np.array(list(batch_y))
+            '''
+            no ling
             train_loss = train_fn(batch_rnn, batch_cnn, batch_word_mask,
                                   batch_sent_mask, batch_sent, batch_doc, batch_y)
+            '''
+            train_loss = train_fn(batch_rnn, batch_cnn, batch_word_mask,
+                                  batch_sent_mask, batch_y)
+
             n_updates += 1
             if n_updates % 100 == 0 and epoch > 6:
                 logging.info('Epoch = %d, loss = %.2f, elapsed time = %.2f (s)' %
@@ -127,7 +152,10 @@ if __name__ == '__main__':
                         format="%(asctime)s %(message)s", datefmt="%m-%d %H:%M")
     logging.info(' '.join(sys.argv))
     # args.debug = True
+    '''
+    no ling
     args.doc_ling_nonlinear = True
+    '''
     args.dropout_rate = 0.5
     # args.word_att = 'dot'
     args.learning_rate = 0.3
