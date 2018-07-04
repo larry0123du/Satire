@@ -46,7 +46,7 @@ homedic = os.getcwd()
 
 
 def readability_f(text):
-	text_ = textacy.Doc(content=unicode(text), lang='en')
+	text_ = textacy.Doc(content=unicode(text), lang=unicode('en'))
 	ts = textacy.TextStats(text_)
 	Flesch_reading_ease_index = ts.readability_stats['flesch_reading_ease']
 	Gunning_fog_index = ts.readability_stats['gunning_fog_index']
@@ -193,9 +193,9 @@ def write_doc_para():
 		text_path = os.path.join(FAKE_TEXT, file_name)
 		sent_path = os.path.join(FAKE_SENT, file_name)
 		doc_path = os.path.join(FAKE_DOC, file_name)
-        if file_name != 'train.txt':
-            write_doc_ling_f(text_path,doc_path)
-		write_para_ling_f(text_path,sent_path)
+                if file_name != 'train.txt':
+                    write_doc_ling_f(text_path,doc_path)
+                write_para_ling_f(text_path,sent_path)
 	logging.info("complete establishing fake feature data...")
 	logging.info("writing true feature data train...")
 

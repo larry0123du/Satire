@@ -140,7 +140,7 @@ def main(args):
                     print("stopped")
                 prev_fsc = dev_acc[3]
 
-    print(record)
+    # print(record)
     print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
 
 

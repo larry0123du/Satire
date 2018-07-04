@@ -10,7 +10,7 @@ def char_hierarchical_fn(args, word_embed, char_embed, values=None):
     word_mask = T.tensor3('word_mask')
     sent_mask = T.matrix('sent_mask')
     # doc_linguistic_x = T.matrix('doc_linguistic')
-    label_y = T.ivector('label_y')
+    label_y = T.lvector('label_y')
 
     char_input_layer = lasagne.layers.InputLayer(shape=(None, args.max_sent, args.max_word, args.max_char),
                                                  input_var=char_x)
