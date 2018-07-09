@@ -52,28 +52,30 @@ def main(args):
     (args.word_vocab_size, args.word_embed_size) = word_embed.shape
     (args.char_vocab_size, args.char_embed_size) = char_embed.shape
     logging.info("compiling Theano function...")
-    '''
-    no ling
-    att_fn, eval_fn, train_fn, params = \
-        tf.char_hierarchical_linguistic_fn(args, word_embed, char_embed, values=None)
-    '''
-    att_fn, eval_fn, train_fn, params = \
-        tf.char_hierarchical_fn(args, word_embed, char_embed, values=None)
+
+    eval_fn, train_fn, params = tf.bi_rnn(args, word_embed)
 
     logging.info("batching examples...")
-    # dev_examples = mb.doc_minibatch(fake_dev + true_dev, minibatch_size=args.batch_size, shuffle=False)
-    dev_examples = mb.vec_minibatch(fake_dev + true_dev, word_dict, char_dict, args, False, True, False, False)
+    dev_examples = mb.vec_minibatch(fake_dev + true_dev, word_dict, char_dict, args, False,
+                                    char=False, sent_ling=False, doc_ling=False)
 # debugging
     logging.info('# dev examples: {}'.format(len(dev_examples)))
+    test_examples = mb.vec_minibatch(fake_test + true_test, word_dict, char_dict, args, False,
+                                     char=False, sent_ling=False, doc_ling=False)
+# debugging
+    logging.info('# test examples: {}'.format(len(test_examples)))
 
-    # test_examples = mb.doc_minibatch(fake_test + true_test, args.batch_size, False)
-    test_examples = mb.vec_minibatch(fake_test + true_test, word_dict, char_dict, args, False, True, False, False)
-    train_examples = mb.train_doc_minibatch(fake_train, true_train, args, over_sample=True)
+    temp = []
+    for true_batch in true_train:
+        temp += true_batch
+    true_train = temp
+    del temp
+    train_examples = mb.doc_minibatch(fake_train + true_train, args.batch_size)
+
     logging.info("checking network...")
-    # dev_acc = evals.eval_batch(eval_fn, dev_examples, word_dict, char_dict, args)
-    dev_acc = evals.eval_vec_batch(eval_fn, dev_examples, True, False, False)
+    dev_acc = evals.eval_vec_batch(eval_fn, dev_examples, char=False, sent_ling=False, doc_ling=False)
     print('Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc)
-    test_acc = evals.eval_vec_batch(eval_fn, test_examples, True, False, False)
+    test_acc = evals.eval_vec_batch(eval_fn, test_examples, char=False, sent_ling=False, doc_ling=False)
     print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
     prev_fsc = 0
     stop_count = 0
@@ -84,72 +86,30 @@ def main(args):
     n_updates = 0
     for epoch in range(args.epoches):
         np.random.shuffle(train_examples)
-        if epoch > 3:
-            logging.info("compiling Theano function again...")
-            args.learning_rate *= 0.9
-            '''
-            no ling
-            att_fn, eval_fn, train_fn, params = \
-                tf.char_hierarchical_linguistic_fn(args, word_embed, char_embed, values=[x.get_value() for x in params])
-            '''
-            att_fn, eval_fn, train_fn, params = \
-                tf.char_hierarchical_fn(args, word_embed, char_embed, values=[x.get_value() for x in params])
-
         for batch_x, _ in train_examples:
-            '''
-            no ling
-            # batch_x, batch_sent, batch_doc, batch_y = zip(*batch_x)
-            '''
             batch_x, batch_y = zip(*batch_x)
-
             batch_x = util.vectorization(list(batch_x), word_dict, char_dict, max_char_length=args.max_char)
-            batch_rnn, batch_sent_mask, batch_word_mask, batch_cnn = \
+            batch_rnn, batch_sent_mask, batch_word_mask, _ = \
                 util.mask_padding(batch_x, args.max_sent, args.max_word, args.max_char)
-            '''
-            no ling
-            batch_sent = util.sent_ling_padding(list(batch_sent), args.max_sent, args.max_ling)
-            batch_doc = util.doc_ling_padding(list(batch_doc), args.max_ling)
-            '''
             batch_y = np.array(list(batch_y))
-            '''
-            no ling
-            train_loss = train_fn(batch_rnn, batch_cnn, batch_word_mask,
-                                  batch_sent_mask, batch_sent, batch_doc, batch_y)
-            '''
-            train_loss = train_fn(batch_rnn, batch_cnn, batch_word_mask,
-                                  batch_sent_mask, batch_y)
-
+            train_loss = train_fn(batch_rnn, batch_word_mask, batch_sent_mask, batch_y)
             n_updates += 1
-            if n_updates % 1000 == 0 and epoch > 6:
+            if n_updates % 100 == 0 and epoch > 7:
                 logging.info('Epoch = %d, loss = %.2f, elapsed time = %.2f (s)' %
                              (epoch, train_loss, time.time() - start_time))
-                # dev_acc = evals.eval_batch(eval_fn, dev_examples, word_dict, char_dict, args)
-                ''' no ling
-                dev_acc = evals.eval_vec_batch(eval_fn, dev_examples)
-                '''
-                dev_acc = evals.eval_vec_batch(eval_fn, dev_examples, True, False, False)
-
+                dev_acc = evals.eval_vec_batch(eval_fn, dev_examples, char=False, sent_ling=False, doc_ling=False)
                 logging.info('Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc)
-                if dev_acc[3] >= best_fsc and dev_acc[0] > best_acc:
+                if dev_acc[3] > best_fsc and dev_acc[0] > best_acc:
                     best_fsc = dev_acc[3]
                     best_acc = dev_acc[0]
                     logging.info('Best dev f1: epoch = %d, n_udpates = %d, f1 = %.2f %%'
                                  % (epoch, n_updates, dev_acc[3]))
                     record = 'Best dev accuracy: epoch = %d, n_udpates = %d ' % \
                              (epoch, n_updates) + ' Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc
-                    # test_acc = evals.eval_batch(eval_fn, test_examples, word_dict, char_dict, args)
-                    ''' no ling
-                    test_acc = evals.eval_vec_batch(eval_fn, test_examples)
-                    '''
-                    test_acc = evals.eval_vec_batch(eval_fn, test_examples, True, False, False)
-
+                    test_acc = evals.eval_vec_batch(eval_fn, test_examples, char=False, sent_ling=False, doc_ling=False)
                     print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
-                    ''' no ling
-                    if test_acc[3] > 91.4:
-                    '''
-                    if test_acc[3] > 88.0:
-                        util.save_params('char_hierarchical_rnn_params_%.2f_%.2f' % (dev_acc[3], test_acc[3]), params,
-                                         epoch=epoch, n_updates=n_updates)
+                    # util.save_params('char_not_params_%.2f' % test_acc[3], params,
+                    #                  epoch=epoch, n_updates=n_updates)
                 if prev_fsc > dev_acc[3]:
                     stop_count += 1
                 else:
@@ -158,8 +118,9 @@ def main(args):
                     print("stopped")
                 prev_fsc = dev_acc[3]
 
-    # print(record)
+    print(record)
     print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
+    return
 
 
 if __name__ == '__main__':

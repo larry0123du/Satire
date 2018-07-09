@@ -1,4 +1,5 @@
 import os
+from io import open
 
 FAKE_TEXT = "data/text/fake"
 TRUE_TEXT = "data/text/true"
@@ -28,7 +29,7 @@ def load_sent(file_name):
             docs.append(doc)
             doc = []
         else:
-            doc.append(line.strip())
+            doc.append(line.strip().encode('utf8'))
     return docs
 
 
@@ -40,8 +41,8 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
     doc_features = load_doc(doc_path)
     # print(text[0],len(text[1]))
     # print(len(text),len(sent_feature),len(doc_features))
-    print(type(doc_features))
-    print(doc_features)
+    # print(type(doc_features))
+    # print(doc_features)
 
     # assert len(text) == len(sent_feature) == len(doc_features)
     labels = [label for _ in range(len(text))]
@@ -76,17 +77,21 @@ def load_true(doc=False, sent_ling=True, doc_ling=True):
     for i in range(6, 8):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
+        print 'text_path', text_path
         sent_path = os.path.join(TRUE_SENT, file_name)
         doc_path = os.path.join(TRUE_DOC, file_name)
         dev += load_feature_set(text_path, sent_path, doc_path, label=1,
                                 doc=doc, sent_ling=sent_ling, doc_ling=doc_ling)
+        print 'dev length', len(dev)
     for i in range(8, 10):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
+        print 'text_path', text_path
         sent_path = os.path.join(TRUE_SENT, file_name)
         doc_path = os.path.join(TRUE_DOC, file_name)
         test += load_feature_set(text_path, sent_path, doc_path, label=1,
                                  doc=doc, sent_ling=sent_ling, doc_ling=doc_ling)
+        print 'test length', len(test)
     return train, dev, test
 
 

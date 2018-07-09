@@ -35,10 +35,18 @@ def vec_minibatch(docs, word_dict, char_dict, args, shuffle=True, char=True, sen
     if shuffle:
         random.shuffle(docs)
     doc_length = len(docs)
+# debugging
+    # print 'doc_length', doc_length
+
     id_list = np.arange(0, doc_length, args.batch_size)
+    # print 'id_list', id_list.shape
+    
     if shuffle:
         np.random.shuffle(id_list)
     mbs = [np.arange(id, min(id + args.batch_size, doc_length)) for id in id_list]
+
+# for debugging
+    # print 'size of batch examples: {} x {}'.format(len(mbs), args.batch_size)
     for mb in mbs:
         batch_x = [docs[i] for i in mb]
 # deugging
