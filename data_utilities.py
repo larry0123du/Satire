@@ -7,9 +7,13 @@ FAKE_DOC = "data/doc/norm_fake"
 TRUE_DOC = "data/doc/norm_true"
 FAKE_SENT = "data/sent/norm_fake"
 TRUE_SENT = "data/sent/norm_true"
-FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
-TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
+'''FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]'''
+FAKE_FILE = ["train.txt","dev.txt","spoof_news_cat.txt"]
+'''TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
              "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "true_test_1.txt", "true_test_2.txt"]
+'''
+TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
+             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "Cnn_news.txt", "Cnn_news.txt"]
 
 homedic = os.getcwd()
 
@@ -37,8 +41,11 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
     text = load_sent(text_path)
     if doc:
         text = list2doc(text)
-    sent_feature = load_sent(sent_path)
-    doc_features = load_doc(doc_path)
+# changed july 9th
+    if sent_ling:
+        sent_feature = load_sent(sent_path)
+    if doc_ling:
+        doc_features = load_doc(doc_path)
     # print(text[0],len(text[1]))
     # print(len(text),len(sent_feature),len(doc_features))
     # print(type(doc_features))

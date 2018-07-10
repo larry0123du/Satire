@@ -25,7 +25,7 @@ def bi_rnn(args, word_embed, char_embed=None, values=None):
     word_rnn = networks.word_rnn(word_input_layer, word_mask_layer, word_embed, args)
 
 # debugging
-    print 'word_rnn:\ninsize:{}\noutsize:{}'.format(word_rnn.input_shape,word_rnn.output_shape)
+    print 'word_rnn:\ninsize:{}\noutsize:{}'.format(word_rnn.input_shapes,word_rnn.output_shape)
 
     if args.dropout_rate > 0:
         word_rnn = lasagne.layers.dropout(word_rnn, p=args.dropout_rate)
@@ -40,13 +40,15 @@ def bi_rnn(args, word_embed, char_embed=None, values=None):
         word_att = networks.Attention(word_att, num_units=2 * args.hidden_size, mask=word_mask_layer)
         word_output = networks.AttOutput([word_rnn, word_att])
 
+    '''
 # debugging
     print 'word_output:\ninsize:{}\noutsize:{}'.format(word_output.input_shape,word_output.output_shape)
+    '''
 
     word_output = lasagne.layers.reshape(word_output, (-1, args.max_sent, [1]))
     sent_rnn = networks.sent_rnn(word_output, sent_mask_layer, args)
 # debugging
-    print 'sent_rnn:\ninsize:{}\noutsize:{}'.format(sent_rnn.input_shape,sent_rnn.output_shape)
+    print 'sent_rnn:\ninsize:{}\noutsize:{}'.format(sent_rnn.input_shapes,sent_rnn.output_shape)
 
     if args.dropout_rate > 0:
         sent_rnn = lasagne.layers.dropout(sent_rnn, p=args.dropout_rate)
@@ -79,11 +81,11 @@ def bi_rnn(args, word_embed, char_embed=None, values=None):
     elif args.optimizer == 'momentum':
         updates = lasagne.updates.momentum(loss, params, args.learning_rate)
 
-    train_fn = theano.function([word_x, char_x, word_mask, sent_mask, label_y],
+    train_fn = theano.function([word_x, word_mask, sent_mask, label_y],
                                loss, updates=updates)
 
     prediction = lasagne.layers.get_output(network_output, deterministic=True)
-    eval_fn = theano.function([word_x, char_x, word_mask, sent_mask],
+    eval_fn = theano.function([word_x, word_mask, sent_mask],
                               prediction)
     return eval_fn, train_fn, params
 

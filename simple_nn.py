@@ -108,8 +108,11 @@ def main(args):
                              (epoch, n_updates) + ' Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc
                     test_acc = evals.eval_vec_batch(eval_fn, test_examples, char=False, sent_ling=False, doc_ling=False)
                     print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
-                    # util.save_params('char_not_params_%.2f' % test_acc[3], params,
-                    #                  epoch=epoch, n_updates=n_updates)
+                    '''
+                    if test_acc[3] > 85:
+                        util.save_params('simple_params_%.2f' % test_acc[3], params,
+                                         epoch=epoch, n_updates=n_updates)
+                    '''
                 if prev_fsc > dev_acc[3]:
                     stop_count += 1
                 else:
@@ -131,10 +134,6 @@ if __name__ == '__main__':
                         format="%(asctime)s %(message)s", datefmt="%m-%d %H:%M")
     logging.info(' '.join(sys.argv))
     # args.debug = True
-    '''
-    no ling
-    args.doc_ling_nonlinear = True
-    '''
     args.dropout_rate = 0.5
     # args.word_att = 'dot'
     args.learning_rate = 0.3
