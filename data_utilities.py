@@ -7,14 +7,20 @@ FAKE_DOC = "data/doc/norm_fake"
 TRUE_DOC = "data/doc/norm_true"
 FAKE_SENT = "data/sent/norm_fake"
 TRUE_SENT = "data/sent/norm_true"
-'''FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]'''
+'''
+FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
 FAKE_FILE = ["train.txt","dev.txt","spoof_news_cat.txt"]
-'''TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
-             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "true_test_1.txt", "true_test_2.txt"]
+'''
+FAKE_FILE = ["train.txt","dev.txt","Spoof_SatireWorld.txt"]
 '''
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
-             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "Cnn_news.txt", "Cnn_news.txt"]
+             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "true_test_1.txt", "true_test_2.txt"]
+TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
+             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "Fox_news_2018_7_9.txt", "Cnn_news.txt"]
+'''
 
+TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
+             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "fox_out.txt", "Cnn_out.txt"]
 homedic = os.getcwd()
 
 def load_doc(file_name):

@@ -94,6 +94,20 @@ def main(args):
             batch_y = np.array(list(batch_y))
             train_loss = train_fn(batch_rnn, batch_word_mask, batch_sent_mask, batch_y)
             n_updates += 1
+            '''
+# debug gradients
+            if n_updates % 50 == 0:
+                word_grad = get_word_grad(batch_rnn, batch_word_mask, batch_sent_mask, batch_y) # a list of numpy arrays
+                word_grad = map(lambda x: x.flatten(), word_grad)
+                word_hist = np.histogram(np.hstack(word_grad), bins='auto')
+                logging.info('word_histogram: {}', word_hist)
+                sent_grad = get_sent_grad(batch_rnn, batch_word_mask, batch_sent_mask, batch_y) # a list of numpy arrays
+                sent_grad = map(lambda x: x.flatten(), sent_grad)
+                sent_hist = np.histogram(np.hstack(sent_grad), bins='auto')
+                logging.info('sent_histogram: {}', sent_hist)
+# end of debugging
+            '''
+
             if n_updates % 100 == 0 and epoch > 7:
                 logging.info('Epoch = %d, loss = %.2f, elapsed time = %.2f (s)' %
                              (epoch, train_loss, time.time() - start_time))

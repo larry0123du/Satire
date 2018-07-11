@@ -5,23 +5,16 @@ import logging
 import theano.tensor as T
 
 def bi_rnn(args, word_embed, char_embed=None, values=None):
-    # char_x = T.itensor4('char_x')
     word_x = T.itensor3('word_x')
     word_mask = T.tensor3('word_mask')
     sent_mask = T.matrix('sent_mask')
-    # doc_linguistic_x = T.matrix('doc_linguistic')
     label_y = T.lvector('label_y')
 
-    '''
-    char_input_layer = lasagne.layers.InputLayer(shape=(None, args.max_sent, args.max_word, args.max_char),
-                                                 input_var=char_x)
-    '''
     word_input_layer = lasagne.layers.InputLayer(shape=(None, args.max_sent, args.max_word), input_var=word_x)
     word_mask_layer = lasagne.layers.InputLayer(shape=(None, args.max_sent, args.max_word), input_var=word_mask)
     word_mask_layer = lasagne.layers.reshape(word_mask_layer, (-1, [2]))
     sent_mask_layer = lasagne.layers.InputLayer(shape=(None, args.max_sent), input_var=sent_mask)
 
-    # char_cnn = networks.char_cnn(char_input_layer, args.num_filter, args.conv_window, char_embed, args)
     word_rnn = networks.word_rnn(word_input_layer, word_mask_layer, word_embed, args)
 
 # debugging
@@ -40,11 +33,6 @@ def bi_rnn(args, word_embed, char_embed=None, values=None):
         word_att = networks.Attention(word_att, num_units=2 * args.hidden_size, mask=word_mask_layer)
         word_output = networks.AttOutput([word_rnn, word_att])
 
-    '''
-# debugging
-    print 'word_output:\ninsize:{}\noutsize:{}'.format(word_output.input_shape,word_output.output_shape)
-    '''
-
     word_output = lasagne.layers.reshape(word_output, (-1, args.max_sent, [1]))
     sent_rnn = networks.sent_rnn(word_output, sent_mask_layer, args)
 # debugging
@@ -52,24 +40,31 @@ def bi_rnn(args, word_embed, char_embed=None, values=None):
 
     if args.dropout_rate > 0:
         sent_rnn = lasagne.layers.dropout(sent_rnn, p=args.dropout_rate)
-    # sent_input = lasagne.layers.DenseLayer(sent_rnn, 2 * args.hidden_size, num_leading_axes=-1,
-                                           # nonlinearity=lasagne.nonlinearities.tanh)
-
-    # sent_att = networks.Attention(sent_input, num_units=2 * args.hidden_size, mask=sent_mask_layer)
-
-    # att_out = lasagne.layers.get_output(sent_att, deterministic=True)
-    # fn_check_attention = theano.function([char_x, word_x, word_mask, sent_mask], att_out)
-
-    # sent_output = networks.AttOutput([sent_rnn, sent_att])
     sent_output = sent_rnn
 
 # this is the final output layer
-    network_output = lasagne.layers.DenseLayer(sent_output, num_units=1, nonlinearity=lasagne.nonlinearities.rectify)
+    # network_output = lasagne.layers.DenseLayer(sent_output, num_units=1, nonlinearity=lasagne.nonlinearities.rectify)
+    network_output = lasagne.layers.DenseLayer(sent_output, num_units=1, nonlinearity=lasagne.nonlinearities.sigmoid)
 # debugging
     print 'network_output:\ninsize:{}\noutsize:{}'.format(network_output.input_shape,network_output.output_shape)
     regularization = lasagne.regularization.regularize_layer_params(network_output, penalty=lasagne.regularization.l2)
     train_pred = lasagne.layers.get_output(network_output)
     loss = lasagne.objectives.binary_crossentropy(train_pred, label_y).mean() + regularization * 0.0001
+
+    '''
+# monitor the gardients of the hidden layer in the word rnn and sentence rnn
+    word_rnn_params = word_rnn.get_params(regularizable=True)
+    sent_rnn_params = sent_rnn.get_params(regularizable=True)
+    word_grad = theano.grad(loss, word_rnn_params)
+    sent_grad = theano.grad(loss, sent_rnn_params)
+    
+# plot computation graph
+    theano.printing.pydotprint(word_grad, outfile='word_grad.png', var_with_name_simple=True)
+    theano.printing.pydotprint(sent_grad, outfile='sent_grad.png', var_with_name_simple=True)
+
+    get_word_grad = theano.function([word_x, word_mask, sent_mask, label_y], word_grad)
+    get_sent_grad = theano.function([word_x, word_mask, sent_mask, label_y], sent_grad)
+    '''
 
     if values is not None:
         lasagne.layers.set_all_param_values(network_output, values, trainable=True)
