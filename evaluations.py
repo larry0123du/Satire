@@ -117,7 +117,8 @@ def eval_vec_batch(fn, examples, char=True, sent_ling=True, doc_ling=True):
             c += matrix[2]
             d += matrix[3]
 
-    print a, b, c, d
+    # commented out on July 10
+    # print a, b, c, d
     acc = 100.0 * (a + d) / (a + b + c + d)
     pre = 100.0 * a / (a + c)
     rec = 100.0 * a / (a + b)

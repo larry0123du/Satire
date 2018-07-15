@@ -1,16 +1,5 @@
 import os
-
-''' commented on jluy 11
-FAKE_TEXT = "data/text/fake"
-TRUE_TEXT = "data/text/true"
-FAKE_DOC = "data/doc/norm_fake"
-TRUE_DOC = "data/doc/norm_true"
-FAKE_SENT = "data/sent/norm_fake"
-TRUE_SENT = "data/sent/norm_true"
-FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
-TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
-             "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "true_test_1.txt", "true_test_2.txt"]
-'''
+from io import open
 
 BASE = '/homes/du113/scratch/'
 FAKE_TEXT = BASE + "data/text/fake"
@@ -54,7 +43,7 @@ def load_sent(file_name):
             docs.append(doc)
             doc = []
         else:
-            doc.append(line.strip())
+            doc.append(line.strip().encode('utf8'))
     return docs
 
 
@@ -62,14 +51,11 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
     text = load_sent(text_path)
     if doc:
         text = list2doc(text)
-    sent_feature = load_sent(sent_path)
-    doc_features = load_doc(doc_path)
-    # print(text[0],len(text[1]))
-    # print(len(text),len(sent_feature),len(doc_features))
-    # print(type(doc_features))
-    # print(doc_features)
-
-    # assert len(text) == len(sent_feature) == len(doc_features)
+# changed july 9th
+    if sent_ling:
+        sent_feature = load_sent(sent_path)
+    if doc_ling:
+        doc_features = load_doc(doc_path)
     labels = [label for _ in range(len(text))]
     if sent_ling and doc_ling:
         return list(zip(text, sent_feature, doc_features, labels))
@@ -79,13 +65,6 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
         return list(zip(text, doc_features, labels))
     elif not sent_ling and not doc_ling:
         return list(zip(text, labels))
-
-
-# text_path = os.path.join(homedic, 'toydata_featuretest.txt')
-# sent_path = os.path.join(homedic, 'para_ling.txt')
-# doc_path = os.path.join(homedic, 'doc_ling.txt')
-# load_feature_set(text_path, sent_path, doc_path, label = 1, doc=False, sent_ling=True, doc_ling=True)
-
 
 
 def load_true(doc=False, sent_ling=True, doc_ling=True):
@@ -102,17 +81,21 @@ def load_true(doc=False, sent_ling=True, doc_ling=True):
     for i in range(6, 8):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
+        print('text_path', text_path)
         sent_path = os.path.join(TRUE_SENT, file_name)
         doc_path = os.path.join(TRUE_DOC, file_name)
         dev += load_feature_set(text_path, sent_path, doc_path, label=1,
                                 doc=doc, sent_ling=sent_ling, doc_ling=doc_ling)
+        print('dev length', len(dev))
     for i in range(8, 10):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
+        print('text_path', text_path)
         sent_path = os.path.join(TRUE_SENT, file_name)
         doc_path = os.path.join(TRUE_DOC, file_name)
         test += load_feature_set(text_path, sent_path, doc_path, label=1,
                                  doc=doc, sent_ling=sent_ling, doc_ling=doc_ling)
+        print('test length', len(test))
     return train, dev, test
 
 

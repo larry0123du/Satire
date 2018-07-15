@@ -12,6 +12,9 @@ import arg_parser as ap
 
 import glob
 
+from cPickle import dump, load
+import pygpu
+
 
 def main(args):
     logging.info("loading data...")
@@ -36,14 +39,31 @@ def main(args):
     logging.info('test: {} {}'.format(len(fake_test), len(true_test)))
 
     logging.info("building dictionary...")
-    # word_dict, char_dict = util.build_dict(None, max_words=0, dict_file=["word_dict", "char_dict"])
-# changed on June 30th
-    list_of_files = glob.glob('data/text/true/*train*.txt') + glob.glob('data/text/fake/*train*.txt')
+# changed on July 10th
+    '''
+    BASE = '/homes/du113/scratch/'
+    list_of_files = glob.glob(BASE + 'data/text/true/*train*.txt') + glob.glob(BASE + 'data/text/fake/*train*.txt')
     docs = []
     for fi in list_of_files:
         docs += du.load_sent(fi)
 
     word_dict, char_dict = util.build_dict(docs)
+
+    # saving word_dict and char_dict
+    BASE = '/homes/du113/scratch/satire-models/'
+    with open(BASE + 'word_dict', 'wb') as fid:
+        dump(word_dict, fid)
+
+    with open(BASE + 'char_dict', 'wb') as fid:
+        dump(char_dict, fid)
+    '''
+    BASE = '/homes/du113/scratch/satire-models/'
+    with open(BASE + 'word_dict') as fid:
+        word_dict = load(fid)
+
+    with open(BASE + 'char_dict') as fid:
+        char_dict = load(fid)
+
 # end of change
 
     logging.info("creating embedding matrix...")
@@ -84,6 +104,8 @@ def main(args):
     logging.info("training %d examples" % len(train_examples))
     start_time = time.time()
     n_updates = 0
+
+    gpu_not_available = True
     for epoch in range(args.epoches):
         np.random.shuffle(train_examples)
         for batch_x, _ in train_examples:
@@ -92,7 +114,16 @@ def main(args):
             batch_rnn, batch_sent_mask, batch_word_mask, _ = \
                 util.mask_padding(batch_x, args.max_sent, args.max_word, args.max_char)
             batch_y = np.array(list(batch_y))
-            train_loss = train_fn(batch_rnn, batch_word_mask, batch_sent_mask, batch_y)
+
+            # added July 10th
+            while gpu_not_available:
+                try:
+                    train_loss = train_fn(batch_rnn, batch_word_mask, batch_sent_mask, batch_y)
+                    gpu_not_available = False
+                except pygpu.gpuarray.GpuArrayException:
+                    'GPU is not available at the moment'
+                    sleep(600)
+
             n_updates += 1
             '''
 # debug gradients
@@ -108,32 +139,34 @@ def main(args):
 # end of debugging
             '''
 
-            if n_updates % 100 == 0 and epoch > 7:
-                logging.info('Epoch = %d, loss = %.2f, elapsed time = %.2f (s)' %
-                             (epoch, train_loss, time.time() - start_time))
-                dev_acc = evals.eval_vec_batch(eval_fn, dev_examples, char=False, sent_ling=False, doc_ling=False)
-                logging.info('Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc)
-                if dev_acc[3] > best_fsc and dev_acc[0] > best_acc:
-                    best_fsc = dev_acc[3]
-                    best_acc = dev_acc[0]
-                    logging.info('Best dev f1: epoch = %d, n_udpates = %d, f1 = %.2f %%'
-                                 % (epoch, n_updates, dev_acc[3]))
-                    record = 'Best dev accuracy: epoch = %d, n_udpates = %d ' % \
-                             (epoch, n_updates) + ' Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc
-                    test_acc = evals.eval_vec_batch(eval_fn, test_examples, char=False, sent_ling=False, doc_ling=False)
-                    print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
-                    '''
-                    if test_acc[3] > 85:
-                        util.save_params('simple_params_%.2f' % test_acc[3], params,
-                                         epoch=epoch, n_updates=n_updates)
-                    '''
-                if prev_fsc > dev_acc[3]:
-                    stop_count += 1
-                else:
-                    stop_count = 0
-                if stop_count == 6:
-                    print("stopped")
-                prev_fsc = dev_acc[3]
+        # if n_updates % 100 == 0 and epoch > 7:
+        if epoch > 7:
+            logging.info('Epoch = %d, loss = %.2f, elapsed time = %.2f (s)' %
+                            (epoch, train_loss, time.time() - start_time))
+            dev_acc = evals.eval_vec_batch(eval_fn, dev_examples, char=False, sent_ling=False, doc_ling=False)
+            logging.info('Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc)
+            if dev_acc[3] > best_fsc and dev_acc[0] > best_acc:
+                best_fsc = dev_acc[3]
+                best_acc = dev_acc[0]
+                logging.info('Best dev f1: epoch = %d, n_udpates = %d, f1 = %.2f %%'
+                                % (epoch, n_updates, dev_acc[3]))
+                record = 'Best dev accuracy: epoch = %d, n_udpates = %d ' % \
+                            (epoch, n_updates) + ' Dev A: %.2f P:%.2f R:%.2f F:%.2f' % dev_acc
+                test_acc = evals.eval_vec_batch(eval_fn, test_examples, char=False, sent_ling=False, doc_ling=False)
+                print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
+                if test_acc[3] > 85:
+                    util.save_params(BASE + 'july_10_old_data_simple_params_%.2f' % test_acc[3], params,
+                                        epoch=epoch, n_updates=n_updates)
+            if prev_fsc > dev_acc[3]:
+                stop_count += 1
+            else:
+                stop_count = 0
+            if stop_count == 6:
+                print("stopped")
+                # added july 10th
+                break
+
+            prev_fsc = dev_acc[3]
 
     print(record)
     print('Performance on Test set: A: %.2f P:%.2f R:%.2f F:%.2f' % test_acc)
@@ -147,9 +180,9 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG,
                         format="%(asctime)s %(message)s", datefmt="%m-%d %H:%M")
     logging.info(' '.join(sys.argv))
-    # args.debug = True
     args.dropout_rate = 0.5
-    # args.word_att = 'dot'
-    args.learning_rate = 0.3
+    # lower the learning rate to 1e-3
+    # args.learning_rate = 0.3
+    args.learning_rate = 1e-3
     print(args.word_att, args.learning_rate, args.dropout_rate)
     main(args)

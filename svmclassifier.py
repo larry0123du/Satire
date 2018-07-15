@@ -1,10 +1,8 @@
-
 # coding: utf-8
 
-# In[1]:
-
-from io import open
-import cPickle
+# from io import open
+# import cPickle
+from pickle import load, dump
 
 import sklearn
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
@@ -19,38 +17,21 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-# In[31]:
+import argparse
 
-'''
-satire_clf = Pipeline([
-    ('vect',CountVectorizer(ngram_range=(1,2))),
-    ('clf',SVC(C=1e-4,kernel='linear',class_weight='balanced',
-              decision_function_shape='ovo',
-              verbose=True,
-              random_state=42)),
-])
-'''
-'''
-satire_clf = Pipeline([
-    ('vect',CountVectorizer(ngram_range=(1,2))),
-    ('clf',LinearSVC(C=1e-4,class_weight='balanced',
-              loss='hinge',
-              verbose=2,
-              max_iter=1,
-              random_state=42)),
-])
-'''
+parser = argparse.ArgumentParser()
+parser.add_argument('-m', '--model', type=str, default=None)
 
-# In[3]:
-
+args = parser.parse_args()
+model = args.model
 
 # File names
-BASE = '/homes/du113/scratch/satire-data/'
+BASE = '/homes/du113/scratch/data/'
 FAKE_TEXT = BASE + "text/fake"
 TRUE_TEXT = BASE + "text/true"
 
 # FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
-FAKE_FILE = ["train.txt", "dev.txt", "spoof_news_cat.txt"]
+FAKE_FILE = ["train.txt", "dev.txt", "Spoof_SatireWorld.txt"]
 
 '''
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
@@ -61,17 +42,26 @@ TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
              "true_train_4.txt", "true_train_5.txt", "true_train_6.txt",
              "true_validation_1.txt", "true_validation_2.txt", 
-             "Cnn_news.txt", "Fox_news_2018_7_9.txt"]
+             "Cnn_out.txt", "fox_out.txt"]
 
 
-# In[18]:
-
-
+# helpers
 def makedata(text_path, label):
     with open(text_path) as f:
-        data = f.read().strip().split('******\n')
+        # data = f.read().strip().split('******\n')
+        lines = f.readlines()
         
-    data = list(zip(data, [label for _ in data]))
+    data = []
+    doc = ''
+
+    for line in lines:
+        if line == '******\n':
+            data.append((doc, label))
+            doc = ''
+        else:
+            doc += line
+
+    # data = list(zip(data, [label for _ in data]))
     return data
     
 def load_fake():
@@ -108,11 +98,23 @@ def load_true():
     return train, dev, test
 
 
+def test_write(data):
+    with open('test.txt', 'w') as f:
+        f.write('\n******\n'.join(data))
 # In[19]:
 
 
 import os
 fake_train, fake_dev, fake_test = load_fake()
+
+'''
+#debugging purpose
+fake_test_text, _ = zip(*fake_test)
+test_write(fake_test_text)
+
+raise Exception
+'''
+
 true_train, true_dev, true_test = load_true()
 
 
@@ -138,6 +140,10 @@ train_text, train_label = prepare(train)
 dev_text, dev_label = prepare(dev)
 test_text, test_label = prepare(test)
 
+'''
+print test_text[1]
+print test_label[1]
+'''
 
 # visualizing features
 def plot_coefficients(classifier, feature_names, top_features=20):
@@ -153,8 +159,10 @@ def plot_coefficients(classifier, feature_names, top_features=20):
     top_negative_coefficients = np.argsort(coef)[:top_features]
     top_coefficients = np.hstack([top_negative_coefficients, top_positive_coefficients])
 
+    '''
     with open('svm_top.pkl', 'wb') as fid:
         cPickle.dump(top_coefficients, fid)
+    '''
 
     # print top_coefficients.shape
     # create plot
@@ -170,43 +178,53 @@ def plot_coefficients(classifier, feature_names, top_features=20):
 
 # In[30]:
 
-best_score = 0.0
-best_model = None
+if model is not None:
+    print('loading model from', model)
+    with open(model, 'rb') as fid:
+        satire_clf = load(fid)
 
-c = 1e-3
-# for c in [1e-1, 1e-2, 1e-3, 1e-4]:
+else:
+    print('initializing and training svm')
+    c = 1e-3
+    # for c in [1e-1, 1e-2, 1e-3, 1e-4]:
+    satire_clf = Pipeline([
+        ('vect',CountVectorizer(ngram_range=(1,2))),
+        ('clf',BaggingClassifier(
+            LinearSVC(C=c,class_weight='balanced',
+                loss='hinge',
+                verbose=2,
+                max_iter=200,
+                random_state=42),
+            max_samples=1.0/10,
+            n_jobs=-1,
+            verbose=1)),
+    ])
+    '''
+    satire_vec = CountVectorizer(ngram_range=(1,2))
+    train_text = satire_vec.fit_transform(train_text)
+    # print satire_vec.get_feature_names()
+
+    satire_clf = BaggingClassifier(
+            LinearSVC(C=c,class_weight='balanced',
+                loss='hinge',
+                verbose=2,
+                max_iter=100,
+                random_state=42),
+            max_samples=1.0/10,
+            n_jobs=-1,
+            verbose=1) 
+    '''
+    satire_clf.fit(train_text, train_label)
+
+    # save the classifier
+    with open('/homes/du113/scratch/satire-models/py3_best_svm_july13.pkl', 'wb') as fid:
+        dump(satire_clf, fid)
+
+coefs = sum([list(e.coef_.ravel()) for e in satire_clf.named_steps['clf'].estimators_], [])
+# print len(coefs)
 '''
-satire_clf = Pipeline([
-    ('vect',CountVectorizer(ngram_range=(1,2))),
-    ('clf',BaggingClassifier(
-        LinearSVC(C=c,class_weight='balanced',
-            loss='hinge',
-            verbose=2,
-            max_iter=200,
-            random_state=42),
-        max_samples=1.0/10,
-        n_jobs=-1,
-        verbose=1)),
-])
-'''
-satire_vec = CountVectorizer(ngram_range=(1,2))
-train_text = satire_vec.fit_transform(train_text)
-# print satire_vec.get_feature_names()
-
-satire_clf = BaggingClassifier(
-        LinearSVC(C=c,class_weight='balanced',
-            loss='hinge',
-            verbose=2,
-            max_iter=100,
-            random_state=42),
-        max_samples=1.0/10,
-        n_jobs=-1,
-        verbose=1) 
-satire_clf.fit(train_text, train_label)
-
 # print len(satire_clf.get_params(deep=True))
-# coefs = sum([list(e.coef_.ravel()) for e in satire_clf.estimators_], [])
-plot_coefficients(satire_clf, satire_vec.get_feature_names())
+# plot_coefficients(satire_clf, satire_vec.get_feature_names())
 '''
 # test on the validation data
 dev_pred = satire_clf.predict(dev_text)
@@ -217,10 +235,9 @@ rec = recall_score(dev_label, dev_pred)
 f1 = f1_score(dev_label, dev_pred)
 
 print('dev acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
-'''
 
 # test on the test data
-test_pred = satire_clf.predict(satire_vec.transform(test_text))
+test_pred = satire_clf.predict(test_text)
 
 acc = accuracy_score(test_label, test_pred)
 prec = precision_score(test_label, test_pred)
@@ -229,14 +246,3 @@ f1 = f1_score(test_label, test_pred)
 
 print('test acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
 
-'''
-if f1 > best_score:
-    best_model = satire_clf
-'''
-
-
-'''
-# save the classifier
-with open('best_svm.pkl', 'wb') as fid:
-        cPickle.dump(best_model, fid)
-'''
