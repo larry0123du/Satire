@@ -1,0 +1,83 @@
+.....*.
+optimization finished, #iter = 39
+Objective value = -0.017768
+nSV = 80
+*
+optimization finished, #iter = 37
+Objective value = -0.017768
+nSV = 80
+.....*
+optimization finished, #iter = 39
+Objective value = -0.017768
+nSV = 80
+.*
+optimization finished, #iter = 37
+Objective value = -0.017768
+nSV = 80
+....*.
+optimization finished, #iter = 39
+Objective value = -0.017768
+nSV = 80
+..*
+optimization finished, #iter = 36
+Objective value = -0.017768
+nSV = 80
+.........*
+optimization finished, #iter = 39
+Objective value = -0.017768
+nSV = 80
+*.**
+optimization finished, #iter = 39
+Objective value = -0.017768
+nSV = 80
+
+optimization finished, #iter = 42
+Objective value = -0.017768
+nSV = 80
+..*
+optimization finished, #iter = 35
+Objective value = -0.017768
+nSV = 80
+[LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear]dev acc: 0.9139151903198676	prec: 0.9222654847706625	rec: 0.9893944780187226	f1: 0.9546513455959068
+test acc: 0.9086553902151804	prec: 0.9166735327236275	rec: 0.9887723663941226	f1: 0.9513589009078343
+.....*
+optimization finished, #iter = 54
+Objective value = -0.036701
+nSV = 166
+.........*
+optimization finished, #iter = 54
+Objective value = -0.036701
+nSV = 166
+...*.
+optimization finished, #iter = 55
+Objective value = -0.036701
+nSV = 166
+....*.
+optimization finished, #iter = 48
+Objective value = -0.036701
+nSV = 166
+.*
+optimization finished, #iter = 53
+Objective value = -0.036701
+nSV = 166
+..........*.
+optimization finished, #iter = 54
+Objective value = -0.036701
+nSV = 166
+....*
+optimization finished, #iter = 52
+Objective value = -0.036701
+nSV = 166
+*
+optimization finished, #iter = 49
+Objective value = -0.036701
+nSV = 166
+.....*
+optimization finished, #iter = 51
+Objective value = -0.036701
+nSV = 166
+....*
+optimization finished, #iter = 54
+Objective value = -0.036701
+nSV = 166
+[LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear][LibLinear]
