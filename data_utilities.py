@@ -21,9 +21,11 @@ FAKE_SENT = BASE + "data/sent/norm_fake"
 TRUE_SENT = BASE + "data/sent/norm_true"
 
 # original data
+'''
 FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
              "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "true_test_1.txt", "true_test_2.txt"]
+'''
 # new 1
 '''
 FAKE_FILE = ["train.txt","dev.txt","spoof_news_cat.txt"]
@@ -36,6 +38,13 @@ FAKE_FILE = ["train.txt","dev.txt","Spoof_SatireWorld.txt"]
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt", "true_train_3.txt", "true_train_4.txt", "true_train_5.txt",
              "true_train_6.txt", "true_validation_1.txt", "true_validation_2.txt", "fox_out.txt", "Cnn_out.txt"]
 '''
+# newest as of July 17th
+FAKE_FILE = ["train.txt", "dev.txt", "DM_HP_satireNews.txt"]
+TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
+             "true_train_4.txt", "true_train_5.txt", "true_train_6.txt",
+             "true_validation_1.txt", "true_validation_2.txt", 
+             "ABC_trueNews1.txt", "ABC_trueNews2.txt"]
+
 homedic = os.getcwd()
 
 def load_doc(file_name):
@@ -62,8 +71,12 @@ def load_feature_set(text_path, sent_path, doc_path, label, doc=False, sent_ling
     text = load_sent(text_path)
     if doc:
         text = list2doc(text)
-    sent_feature = load_sent(sent_path)
-    doc_features = load_doc(doc_path)
+
+    # added july 18th
+    if sent_ling:
+        sent_feature = load_sent(sent_path)
+    if doc_ling:
+        doc_features = load_doc(doc_path)
     # print(text[0],len(text[1]))
     # print(len(text),len(sent_feature),len(doc_features))
     # print(type(doc_features))

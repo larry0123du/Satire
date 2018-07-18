@@ -1,1 +1,1 @@
-THEANO_FLAGS=blas.ldflags="-L/usr/lib/ -lblas" python3 char_hierarchical_linguistic_rnn.py --test_only True --model_file ~/scratch/satire-models/char_hierarchical_rnn_params_90.51_91.67 --debug False --embedding_file ~/scratch/glove100d.txt
+THEANO_FLAGS=blas.ldflags="-L/usr/lib/ -lblas" python3 char_hierarchical_linguistic_rnn.py --test_only True --model_file ~/scratch/satire-models/char_hierarchical_rnn_params_90.51_91.67 --debug False --embedding_file ~/scratch/glove100d.txt | tee ~/scratch/satire-logs/july_18_log.txt

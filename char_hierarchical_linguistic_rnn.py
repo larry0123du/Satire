@@ -76,22 +76,25 @@ def main(args):
         tf.char_hierarchical_linguistic_fn(args, word_embed, char_embed, values=None)
     '''
     # added on july 11th
-    if args.test_only:
+    # modified on july 17th
+    if args.model_file:
         logging.info('using pretrained model from {}'.format(args.model_file))
-        weights = util.load_params(args.model_file)['params']
+        payload = util.load_params(args.model_file)
+        weights = payload['params']
+        n_updates = payload['n_updates']
+
     else:
         logging.info('initializing new network')
+        n_updates = 0
         weights = None
     att_fn, eval_fn, train_fn, params = \
         tf.char_hierarchical_fn(args, word_embed, char_embed, values=weights)
 
     logging.info("batching examples...")
-    # dev_examples = mb.doc_minibatch(fake_dev + true_dev, minibatch_size=args.batch_size, shuffle=False)
     dev_examples = mb.vec_minibatch(fake_dev + true_dev, word_dict, char_dict, args, False, True, False, False)
 # debugging
     logging.info('# dev examples: {}'.format(len(dev_examples)))
 
-    # test_examples = mb.doc_minibatch(fake_test + true_test, args.batch_size, False)
     test_examples = mb.vec_minibatch(fake_test + true_test, word_dict, char_dict, args, False, True, False, False)
     if not args.test_only:
         train_examples = mb.train_doc_minibatch(fake_train, true_train, args, over_sample=True)
@@ -110,7 +113,7 @@ def main(args):
         best_acc = 0
         logging.info("training %d examples" % len(train_examples))
         start_time = time.time()
-        n_updates = 0
+        # n_updates = 0
 
         gpu_not_available = True
         for epoch in range(args.epoches):
@@ -192,7 +195,7 @@ def main(args):
                 if test_acc[3] > 91.4:
                 '''
                 if test_acc[3] > 88.0:
-                    util.save_params(BASE + 'july_10_new_data_char_hierarchical_rnn_params_%.2f_%.2f' % (dev_acc[3], test_acc[3]), params,
+                    util.save_params(BASE + 'july_17_new_data_char_hierarchical_rnn_params_%.2f_%.2f' % (dev_acc[3], test_acc[3]), params,
                                         epoch=epoch, n_updates=n_updates)
             if prev_fsc > dev_acc[3]:
                 stop_count += 1

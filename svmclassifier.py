@@ -37,19 +37,26 @@ BASE = '/homes/du113/scratch/data/'
 FAKE_TEXT = BASE + "text/fake"
 TRUE_TEXT = BASE + "text/true"
 
-FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
+# FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
 # FAKE_FILE = ["train.txt", "dev.txt", "Spoof_SatireWorld.txt"]
+FAKE_FILE = ["train.txt", "dev.txt", "DM_HP_satireNews.txt"]
 
+'''
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
              "true_train_4.txt", "true_train_5.txt", "true_train_6.txt",
              "true_validation_1.txt", "true_validation_2.txt", 
              "true_test_1.txt", "true_test_2.txt"]
+'''
 '''
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
              "true_train_4.txt", "true_train_5.txt", "true_train_6.txt",
              "true_validation_1.txt", "true_validation_2.txt", 
              "Cnn_out.txt", "fox_out.txt"]
 '''
+TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
+             "true_train_4.txt", "true_train_5.txt", "true_train_6.txt",
+             "true_validation_1.txt", "true_validation_2.txt", 
+             "ABC_trueNews1.txt", "ABC_trueNews2.txt"]
 
 
 def parse():
@@ -88,7 +95,7 @@ def load_fake():
     fake = []
     for file_name in FAKE_FILE:
         text_path = os.path.join(FAKE_TEXT, file_name)
-        data = makedata(text_path, 0)
+        data = makedata(text_path, 1)
         logging.warning('loading {} fake data'.format(len(data)))
         fake.append(data)
     return fake[0], fake[1], fake[2]
@@ -101,19 +108,19 @@ def load_true():
     for i in range(6):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
-        train += makedata(text_path, 1)
+        train += makedata(text_path, 0)
     logging.warning('loading {} true data'.format(len(train)))
         
     for i in range(6, 8):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
-        dev += makedata(text_path, 1)
+        dev += makedata(text_path, 0)
     logging.warning('loading {} true data'.format(len(dev)))
         
     for i in range(8, 10):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
-        test += makedata(text_path, 1)
+        test += makedata(text_path, 0)
     logging.warning('loading {} true data'.format(len(test)))
         
     return train, dev, test
@@ -148,23 +155,90 @@ def prepare(data):
 
 
 # visualizing features
-def plot_coefficients(classifier, feature_names, top_features=20):
-    coefs = [e.coef_.ravel() for e in classifier.estimators_]
-
-    coef = coefs[0]
-    
-    top_positive_coefficients = np.argsort(coef)[-top_features:]
-    top_negative_coefficients = np.argsort(coef)[:top_features]
-    top_coefficients = np.hstack([top_negative_coefficients, top_positive_coefficients])
-
-    # create plot
-    plt.figure(figsize=(15, 10))
-    colors = ['red' if c < 0 else 'blue' for c in coef[top_coefficients]]
-    plt.bar(np.arange(2 * top_features), coef[top_coefficients], color=colors)
+def plot_coefficients(classifier, top_features=20):
+    coefs = get_coeffs(classifier)
+    feature_names = classifier.named_steps['vect'].get_feature_names()
     feature_names = np.array(feature_names)
 
-    plt.xticks(np.arange(1, 1 + 2 * top_features), feature_names[top_coefficients], rotation=60, ha='right')
+    with open('/homes/du113/scratch/satire-models/features.p', 'wb') as fid:
+        dump({'coefs':coefs, 'fn':feature_names}, fid)
+
+    fig, ax = plt.subplots(nrows=len(coefs), ncols=1, figsize=(10, 5))
+
+    for i, coef in enumerate(coefs):
+        top_positive_coefficients = np.argsort(coef)[-top_features:]
+        top_negative_coefficients = np.argsort(coef)[:top_features]
+        top_coefficients = np.hstack([top_negative_coefficients, top_positive_coefficients])
+        # for debugging
+        # logging.warning(top_coefficients.shape)
+        # logging.warning(top_coefficients.dtype)
+
+        # create plot
+        # plt.figure(figsize=(15, 10))
+        
+        colors = ['red' if c < 0 else 'blue' for c in coef[top_coefficients]]
+        ax[i].bar(np.arange(2 * top_features), coef[top_coefficients], color=colors)
+
+        ax[i].set_xticks(np.arange(1, 1 + 2 * top_features))
+        ax[i].set_xticklabels(feature_names[top_coefficients], rotation=60, ha='right')
     plt.show()
+
+
+# visualizing features
+def print_coefficients(classifier, top_features=20):
+    coefs = get_coeffs(classifier)
+    feature_names = classifier.named_steps['vect'].get_feature_names()
+    feature_names = np.array(feature_names)
+
+    with open('/homes/du113/scratch/satire-models/features.p', 'wb') as fid:
+        dump({'coefs':coefs, 'fn':feature_names}, fid)
+
+    coef = coefs[0]
+    top_positive_coefficients = np.argsort(coef)[-top_features:]
+    top_negative_coefficients = np.argsort(coef)[:top_features]
+    
+    logging.warning('top fake coefs')
+    logging.warning(feature_names[top_negative_coefficients])
+    logging.warning('top true coefs')
+    logging.warning(feature_names[top_positive_coefficients])
+
+
+def get_most_frequent(data, label, topk=20):
+    fake_counter = CountVectorizer(ngram_range=(1,2))
+    true_counter = CountVectorizer(ngram_range=(1,2))
+
+    data, label = np.array(data), np.array(label, dtype='bool')
+    true_data = data[label]
+    fake_data = data[np.invert(label)]
+    fake = fake_counter.fit_transform(fake_data)
+    true = true_counter.fit_transform(true_data)
+
+    fake_grams = np.array(fake_counter.get_feature_names())
+    # for debugging
+    # logging.warning(fake_grams.shape)
+    # logging.warning(fake_grams.dtype)
+
+    fake_count = np.asarray(fake.sum(axis=0)).squeeze()
+
+    # for debugging
+    # logging.warning(fake_count.shape)
+    # logging.warning(fake_count.dtype)
+
+    true_grams = np.array(true_counter.get_feature_names())
+    true_count = np.asarray(true.sum(axis=0)).squeeze()
+
+    top_fake = np.argsort(fake_count)[-topk:]
+
+    # for debugging
+    # logging.warning(top_fake.shape)
+    # logging.warning(top_fake.dtype)
+
+    top_true = np.argsort(true_count)[-topk:]
+
+    logging.warning('top fake words:')
+    logging.warning(fake_grams[top_fake])
+    logging.warning('top true words:')
+    logging.warning(true_grams[top_true])
 
 
 def train(dataset, p=1.0):
@@ -176,7 +250,7 @@ def train(dataset, p=1.0):
 
     if model is not None:
         logging.warning('loading model from ' + model)
-        with open(model, 'rb') as fid:
+        with open('/homes/du113/scratch/satire-models/' + model, 'rb') as fid:
             satire_clf = load(fid)
 
     else:
@@ -203,9 +277,12 @@ def train(dataset, p=1.0):
             num = int(len(train_label) * p)
             train_text, train_label = train_text[:num], train_label[:num]
 
+            # debugging
+            # get_most_frequent(train_text, train_label)
+
         label_distr = Counter(train_label)
-        logging.warning('satire sample: {}'.format(label_distr[0]))
-        logging.warning('true sample: {}'.format(label_distr[1]))
+        logging.warning('satire sample: {}'.format(label_distr[1]))
+        logging.warning('true sample: {}'.format(label_distr[0]))
 
         logging.warning('start training')
         satire_clf.fit(train_text, train_label)
@@ -216,30 +293,33 @@ def train(dataset, p=1.0):
             with open('/homes/du113/scratch/satire-models/' + save, 'wb') as fid:
                 dump(satire_clf, fid)
 
+    # plot_coefficients(satire_clf)
+    # print_coefficients(satire_clf)
+
     return satire_clf
 
 
 def get_coeffs(satire_clf):
-    coefs = sum([list(e.coef_.ravel()) for e in satire_clf.named_steps['clf'].estimators_], [])
-    # print len(coefs)
-    '''
-    # print len(satire_clf.get_params(deep=True))
+    # return: list of np arrays (n_estimators x n_dimensions)
+    coefs = [e.coef_.ravel() for e in satire_clf.named_steps['clf'].estimators_]
+    return coefs
     # plot_coefficients(satire_clf, satire_vec.get_feature_names())
-    '''
 
 def validate(satire_clf, dataset):
     dev_text, dev_label = dataset['dev']
     test_text, test_label = dataset['test']
 
+    # debugging
+    # get_most_frequent(dev_text, dev_label)
     # test on the validation data
     dev_pred = satire_clf.predict(dev_text)
 
     dev_lab_distr = Counter(dev_label)
-    logging.warning('satire lab: {}'.format(dev_lab_distr[0]))
-    logging.warning('true lab: {}'.format(dev_lab_distr[1]))
+    logging.warning('satire lab: {}'.format(dev_lab_distr[1]))
+    logging.warning('true lab: {}'.format(dev_lab_distr[0]))
     pred_distr = Counter(dev_pred)
-    logging.warning('satire predictions: {}'.format(pred_distr[0]))
-    logging.warning('true predictions: {}'.format(pred_distr[1]))
+    logging.warning('satire predictions: {}'.format(pred_distr[1]))
+    logging.warning('true predictions: {}'.format(pred_distr[0]))
 
     acc = accuracy_score(dev_label, dev_pred)
     prec = precision_score(dev_label, dev_pred)
@@ -247,20 +327,22 @@ def validate(satire_clf, dataset):
     f1 = f1_score(dev_label, dev_pred)
 
     cm = confusion_matrix(dev_label, dev_pred)
-    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[1,1], cm[0,1], cm[0,0], cm[1,0]))
+    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[0,0], cm[1,0], cm[1,1], cm[0,1]))
 
     logging.warning('dev acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
     print('dev acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
 
+    # debugging
+    # get_most_frequent(test_text, test_label)
     # test on the test data
     test_pred = satire_clf.predict(test_text)
 
     test_lab_distr = Counter(test_label)
-    logging.warning('satire lab: {}'.format(test_lab_distr[0]))
-    logging.warning('true lab: {}'.format(test_lab_distr[1]))
+    logging.warning('satire lab: {}'.format(test_lab_distr[1]))
+    logging.warning('true lab: {}'.format(test_lab_distr[0]))
     pred_distr = Counter(test_pred)
-    logging.warning('satire predictions: {}'.format(pred_distr[0]))
-    logging.warning('true predictions: {}'.format(pred_distr[1]))
+    logging.warning('satire predictions: {}'.format(pred_distr[1]))
+    logging.warning('true predictions: {}'.format(pred_distr[0]))
 
     acc = accuracy_score(test_label, test_pred)
     prec = precision_score(test_label, test_pred)
@@ -268,7 +350,7 @@ def validate(satire_clf, dataset):
     f1 = f1_score(test_label, test_pred)
 
     cm = confusion_matrix(test_label, test_pred)
-    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[1,1], cm[0,1], cm[0,0], cm[1,0]))
+    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[0,0], cm[1,0], cm[1,1], cm[0,1]))
 
     logging.warning('test acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
     print('test acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
@@ -278,9 +360,10 @@ def main():
     step = 0.001
     dataset = loaddata()
 
-    for i in range(6):
-        svm = train(dataset, min(1, step * np.exp(i)))
-        validate(svm, dataset)
+    # for i in range(6):
+    # svm = train(dataset, min(1, step * np.exp(i)))
+    svm = train(dataset)
+    validate(svm, dataset)
 
 
 if __name__ == '__main__':

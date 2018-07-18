@@ -8,4 +8,10 @@ def check_fake():
     print(data[0][0])
 
 
+def check_true():
+    sample_true = os.path.join(TRUE_TEXT, TRUE_FILE[9])
+    data = makedata(sample_true, 1)
+
+    print(data[0][0])
 check_fake()
+# check_true()
