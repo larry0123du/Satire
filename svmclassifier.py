@@ -33,13 +33,13 @@ logging.basicConfig(format=FORMAT)
 
 
 # File names
-BASE = '/homes/du113/scratch/data/'
+BASE = '/homes/du113/scratch/data_NE/'
 FAKE_TEXT = BASE + "text/fake"
 TRUE_TEXT = BASE + "text/true"
 
 # FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
 # FAKE_FILE = ["train.txt", "dev.txt", "Spoof_SatireWorld.txt"]
-FAKE_FILE = ["train.txt", "dev.txt", "DM_HP_satireNews.txt"]
+# FAKE_FILE = ["train.txt", "dev.txt", "DM_HP_satireNews.txt"]
 
 '''
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
@@ -53,10 +53,19 @@ TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
              "true_validation_1.txt", "true_validation_2.txt", 
              "Cnn_out.txt", "fox_out.txt"]
 '''
+'''
 TRUE_FILE = ["true_train_1.txt", "true_train_2.txt","true_train_3.txt",
              "true_train_4.txt", "true_train_5.txt", "true_train_6.txt",
              "true_validation_1.txt", "true_validation_2.txt", 
              "ABC_trueNews1.txt", "ABC_trueNews2.txt"]
+'''
+FAKE_FILE = ["train.txt", "dev.txt", "test.txt"]
+TRUE_FILE = ["without_Hillarytrue_train_1_.txt", "without_Hillarytrue_train_2_.txt","without_Hillarytrue_train_3_.txt",
+             "without_Hillarytrue_train_4_.txt", "without_Hillarytrue_train_5_.txt", "without_Hillarytrue_train_6_.txt",
+             "without_Hillarytrue_validation_1_.txt", "without_Hillarytrue_validation_2_.txt", 
+             "without_Hillarytrue_test_1_.txt", "without_Hillarytrue_test_2_.txt", 
+             "with_Hillarytrue_test_1.txt", "with_Hillarytrue_test_2.txt", # those two are dev sets
+             "with_Hillarytrue_dev_1.txt", "with_Hillarytrue_dev_2.txt"] # those two are test sets
 
 
 def parse():
@@ -105,19 +114,19 @@ def load_true():
     train = []
     dev = []
     test = []
-    for i in range(6):
+    for i in range(10):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
         train += makedata(text_path, 0)
     logging.warning('loading {} true data'.format(len(train)))
         
-    for i in range(6, 8):
+    for i in range(10, 12):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
         dev += makedata(text_path, 0)
     logging.warning('loading {} true data'.format(len(dev)))
         
-    for i in range(8, 10):
+    for i in range(12, 14):
         file_name = TRUE_FILE[i]
         text_path = os.path.join(TRUE_TEXT, file_name)
         test += makedata(text_path, 0)
@@ -241,6 +250,18 @@ def get_most_frequent(data, label, topk=20):
     logging.warning(true_grams[top_true])
 
 
+def inspect(dataset):
+    train_text, train_label = dataset['train']
+    dev_text, dev_label = dataset['dev']
+    test_text, test_label = dataset['test']
+
+    logging.warning('getting most frequent words in the training set')
+    get_most_frequent(train_text, train_label)
+    logging.warning('getting most frequent words in the dev set')
+    get_most_frequent(dev_text, dev_label)
+    logging.warning('getting most frequent words in the test set')
+    get_most_frequent(test_text, test_label)
+    
 def train(dataset, p=1.0):
     # input: dataset, portion of the data to use
     # return: model
@@ -277,8 +298,8 @@ def train(dataset, p=1.0):
             num = int(len(train_label) * p)
             train_text, train_label = train_text[:num], train_label[:num]
 
-            # debugging
-            # get_most_frequent(train_text, train_label)
+        # debugging
+        # get_most_frequent(train_text, train_label)
 
         label_distr = Counter(train_label)
         logging.warning('satire sample: {}'.format(label_distr[1]))
@@ -327,7 +348,7 @@ def validate(satire_clf, dataset):
     f1 = f1_score(dev_label, dev_pred)
 
     cm = confusion_matrix(dev_label, dev_pred)
-    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[0,0], cm[1,0], cm[1,1], cm[0,1]))
+    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[1,1], cm[0,1], cm[0,0], cm[1,0]))
 
     logging.warning('dev acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
     print('dev acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
@@ -350,7 +371,7 @@ def validate(satire_clf, dataset):
     f1 = f1_score(test_label, test_pred)
 
     cm = confusion_matrix(test_label, test_pred)
-    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[0,0], cm[1,0], cm[1,1], cm[0,1]))
+    logging.warning('TP: {}\tFP: {}\tTN: {}\tFN: {}'.format(cm[1,1], cm[0,1], cm[0,0], cm[1,0]))
 
     logging.warning('test acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
     print('test acc: {}\tprec: {}\trec: {}\tf1: {}'.format(acc, prec, rec, f1))
@@ -362,8 +383,11 @@ def main():
 
     # for i in range(6):
     # svm = train(dataset, min(1, step * np.exp(i)))
+    inspect(dataset)
+    '''
     svm = train(dataset)
     validate(svm, dataset)
+    '''
 
 
 if __name__ == '__main__':
